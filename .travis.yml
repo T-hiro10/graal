@@ -89,9 +89,16 @@ install:
         export JAVA_HOME=${TRAVIS_BUILD_DIR}/../openjdk1.8.0_${JDK8_UPDATE_VERSION}-${JVMCI_VERSION}
       fi
 
+before_script:
+  echo -n > /home/travis/stream_method_stacktrace.txt
+
 script:
   - echo ${JAVA_HOME}
   - ${JAVA_HOME}/bin/java -version
   - mx --primary-suite-path ${TRAVIS_BUILD_DIR}/${PRIMARY} --java-home=${JAVA_HOME} gate --strict-mode --tags ${GATE}
+
+after_success:
+  cat /home/travis/stream_method_stacktrace.txt
+
 after_failure:
   - cat hs_err*

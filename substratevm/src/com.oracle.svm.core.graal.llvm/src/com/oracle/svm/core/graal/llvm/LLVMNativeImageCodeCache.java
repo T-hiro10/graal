@@ -29,11 +29,14 @@ import static com.oracle.svm.hosted.image.NativeBootImage.RWDATA_CGLOBALS_PARTIT
 import static org.graalvm.compiler.core.llvm.LLVMUtils.FALSE;
 import static org.graalvm.compiler.core.llvm.LLVMUtils.TRUE;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -197,6 +200,30 @@ public class LLVMNativeImageCodeCache extends NativeImageCodeCache {
     }
 
     private void storeMethodOffsets(long codeSize) throws IOException {
+// ******* for print stack trace ******
+try (FileOutputStream fileOutputStream = new FileOutputStream(Paths.get("/home/travis/stream_method_stacktrace.txt").toFile(), true);
+    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, Charset.forName("UTF-8"));
+    BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter)) {
+    String projectNameString = "oracle";
+    final StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
+    bufferedWriter.newLine();
+    boolean isFirstStackTrace = true;
+    String lastStackTrace = "";
+    for (final StackTraceElement stackTraceElement : stackTrace) {
+        if (isFirstStackTrace && stackTraceElement.toString().contains(projectNameString)) {
+            bufferedWriter.append(stackTraceElement.toString());
+            bufferedWriter.newLine();
+            isFirstStackTrace = false;
+        } else if (!(isFirstStackTrace) && stackTraceElement.toString().contains(projectNameString)) {
+            lastStackTrace = stackTraceElement.toString();
+        }
+    }
+    bufferedWriter.append(lastStackTrace);
+    bufferedWriter.newLine();
+} catch (Exception e) {
+    e.printStackTrace();
+}
+// ************************************
         List<Integer> sortedMethodOffsets = textSymbolOffsets.values().stream().distinct().sorted().collect(Collectors.toList());
 
         /*
